@@ -2,14 +2,27 @@
 
 (provide (all-defined-out))
 
-(require (only-in racket/match match))
+(require (only-in racket/match match)
+         (only-in racket/contract define/contract cons/c or/c any/c ->))
 
-(define (term-cont func) (cons 'term func))
-(define (split-cont var expr) (cons 'split (cons var expr)))
-(define (var-cont var) (cons 'var var))
-(define (gen-split-cont expr)
+(require "cps-expr-contracts.rkt")
+
+(define var/c (or/c symbol? identifier?))
+(define cont/c
+  (or/c
+   (cons/c 'term (any/c . -> . any/c))
+   (cons/c 'split (cons/c var/c syntax?))
+   (cons/c 'var var/c)))
+
+(define/contract (term-cont func) (procedure? . -> . cont/c)
+  (cons 'term func))
+(define/contract (split-cont var expr) (var/c syntax? . -> . cont/c)
+  (cons 'split (cons var expr)))
+(define/contract (var-cont var) (var/c . -> . cont/c)
+  (cons 'var var))
+(define/contract (gen-split-cont expr) (syntax? . -> . (values var/c cont/c))
   (let* ([var (gensym)]) (values var (split-cont var expr))))
-(define (gen-var-cont)
+(define/contract (gen-var-cont) (-> (values var/c cont/c))
   (let* ([var (gensym)]) (values var (var-cont var))))
 
 (define (use-let e k)
@@ -18,7 +31,7 @@
     [(cons 'split (cons v ke)) (split-cont-use-let e v ke)]
     [(cons 'var v) (var-cont-use-let e v)]))
 
-(define (apply-cont k e)
+(define/contract (apply-cont k e) (cont/c any/c . -> . cps-expr-shallow/c)
   (match k
     [(cons 'term f) (apply-term-cont f e)]
     [(cons 'split (cons v ke)) (apply-split-cont v ke e)]
@@ -60,8 +73,7 @@
   (let ([v (gensym)])
     #`(let ([#,v #,e]) (#%app #,kvar #,v))))
 
-; find another place for this
-(define (identifier? stx) (symbol? (syntax-e stx)))
+; TODO find another place for these
 (define (whnf? stx)
   (or (number? (syntax-e stx))
       (identifier? stx)))
