@@ -1,30 +1,33 @@
 #lang racket/base
-
 (provide (all-defined-out))
 
 (require (only-in racket/bool symbol=?))
+(require syntax/parse)
 
 (require "cont.rkt")
 
+(define-syntax-class whnf
+  [pattern x #:when (whnf? #'x)])
+
 (define (transform-decl stx)
-  (syntax-case stx (define)
-    [(define var body) (identifier? #'var)
+  (syntax-parse stx
+    [((~datum define) var:id body:expr)
      (transform-expr #'body (term-cont (lambda (v) #`(define-value var #,v))))]
-    [(define (func arg ...) body)
+    [((~datum define) (func:id arg:id ...) body:expr)
      (let-values ([(kvar k) (gen-var-cont)])
        #`(define-value func (lambda (arg ... #,kvar) #,(transform-expr #'body k))))]
-    [expr
+    [expr:expr
      (transform-expr #'expr (term-cont (lambda (v) #`(print-value #,v))))]
    ))
 
 (define (transform-expr stx k)
-  (syntax-case stx (let)
-     [(let ([var val]) expr) ; TODO support multiple params
+  (syntax-parse stx
+     [((~datum let) ([var:id val:expr]) expr:expr) ; TODO support multiple params
       (let ([converted-expr (transform-expr #'expr k)])
         (transform-expr #'val (split-cont #'var converted-expr)))]
 
-     [expr (whnf? #'expr) (apply-cont k #'expr)]  ; TODO what if there is a primop here?
-     [(func arg ...) (transform-call #'func (syntax->list #'(arg ...)) k)]
+     [expr:whnf (apply-cont k #'expr)]  ; TODO what if there is a primop here?
+     [(func:expr arg:expr ...) (transform-call #'func (syntax->list #'(arg ...)) k)]
   ))
 
 (define (transform-call func args k)
