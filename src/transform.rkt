@@ -1,4 +1,5 @@
 #lang racket/base
+
 (provide (all-defined-out))
 
 (require (only-in racket/bool symbol=?))
@@ -12,10 +13,10 @@
 (define (transform-decl stx)
   (syntax-parse stx
     [((~datum define) var:id body:expr)
-     (transform-expr #'body (term-cont (lambda (v) #`(define-value var #,v))))]
+     (transform-expr #'body (term-cont (lambda (v) #`(define-value 'var #,v))))]
     [((~datum define) (func:id arg:id ...) body:expr)
      (let-values ([(kvar k) (gen-var-cont)])
-       #`(define-value func (lambda (arg ... #,kvar) #,(transform-expr #'body k))))]
+       #`(define-value 'func (lambda (arg ... #,kvar) #,(transform-expr #'body k))))]
     [expr:expr
      (transform-expr #'expr (term-cont (lambda (v) #`(print-value #,v))))]
    ))
@@ -47,7 +48,7 @@
 (define (split e)
   (if (whnf? e)
     (cons (lambda (expr) expr) e)
-    (let ([var (gensym)])
+    (let ([var (syntax-gensym)])
       (cons (lambda (expr) (transform-expr e (split-cont var expr))) var))))
 
 (define (primop? stx)

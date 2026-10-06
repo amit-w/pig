@@ -8,9 +8,13 @@
 (define (split-cont var expr) (cons 'split (cons var expr)))
 (define (var-cont var) (cons 'var var))
 (define (gen-split-cont expr)
-  (let* ([var (gensym)]) (values var (split-cont var expr))))
+  (let* ([var (syntax-gensym)]) (values var (split-cont var expr))))
 (define (gen-var-cont)
-  (let* ([var (gensym)]) (values var (var-cont var))))
+  (let* ([var (syntax-gensym)]) (values var (var-cont var))))
+
+(define syntetic-syntax-context #'1)
+(define (syntax-gensym)
+  (datum->syntax syntetic-syntax-context (gensym)))
 
 (define (use-let e k)
   (match k
@@ -43,21 +47,21 @@
    [else #`(#,e #,(reify-split-cont v ke))]))
 
 (define (reify-term-cont f)
-  (let ([var (gensym)])
+  (let ([var (syntax-gensym)])
     #`(lambda (#,var) #,(f var))))
 
 (define (reify-split-cont v ke)
   #`(lambda (#,v) #,ke))
 
 (define (term-cont-use-let e f)
-  (let ([var (gensym)])
+  (let ([var (syntax-gensym)])
     #`(let ([#,var #,e]) #,(f var))))
 
 (define (split-cont-use-let e v ke)
   #`(let ([#,v #,e]) #,ke))
 
 (define (var-cont-use-let e kvar)
-  (let ([v (gensym)])
+  (let ([v (syntax-gensym)])
     #`(let ([#,v #,e]) (#%app #,kvar #,v))))
 
 ; find another place for this
