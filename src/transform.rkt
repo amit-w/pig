@@ -1,5 +1,4 @@
 #lang racket/base
-
 (provide (all-defined-out))
 
 (require (only-in racket/bool symbol=?))
@@ -9,6 +8,9 @@
 
 (define-syntax-class whnf
   [pattern x #:when (whnf? #'x)])
+
+(define-syntax-class binding
+  [pattern [var val]])
 
 (define (transform-decl stx)
   (syntax-parse stx
@@ -23,8 +25,9 @@
 
 (define (transform-expr stx k)
   (syntax-parse stx
-     [((~datum let) ([var:id val:expr]) expr:expr) ; TODO support multiple params
-      (let ([converted-expr (transform-expr #'expr k)])
+     [((~datum let*) () expr:expr) (transform-expr #'expr k)]
+     [((~datum let*) ([var:id val:expr] rest:binding ...) expr:expr) ; TODO support multiple params
+      (let ([converted-expr (transform-expr #'(let* (rest ...) expr) k)])
         (transform-expr #'val (split-cont #'var converted-expr)))]
 
      [expr:whnf (apply-cont k #'expr)]  ; TODO what if there is a primop here?

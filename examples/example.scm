@@ -11,5 +11,7 @@
 (add (+ 1 2) 3)
 (define (f x) x)
 (+ 2 3)
-(let ([a (+ 1 2)]) (add a a))
-(let ([a (add 1 2)]) (add a a))
+(let* ([a (+ 1 2)]) (add a a))
+(let* ([a (add 1 2)]) (add a a))
+(let* ([a (add 1 2)] [b (+ 3 4)]) (+ a b))
+; (let* ([x (let* ([a 1]) a)]) a)  ; TODO make this use of `a` unbound
