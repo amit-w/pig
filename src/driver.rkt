@@ -1,29 +1,24 @@
 #lang racket/base
 
-; (provide body step reset current main read-resolved syntaxes)
+; TODO explicit export list
 (provide (all-defined-out))
-
-(require syntax/modresolve)
 
 (require "transform.rkt")
 (require "oracle-test.rkt")
 
 (define ns (make-base-namespace))
 
-(define (read-resolved)
-  (namespace-syntax-introduce (read-syntax) ns))
-
 (define tested-file "examples/example.scm")
 
 (define body
   (with-input-from-file
     tested-file
-    read-resolved))
+    read))
 
 (define (iter-read f)
-  (do ([stx (read-syntax) (read-syntax)])
-      ((eof-object? stx))
-      (f (namespace-syntax-introduce stx ns))))
+  (do ([decl (read) (read)])
+      ((eof-object? decl))
+      (f decl)))
 
 (define (main)
   (with-input-from-file tested-file do-loop))
@@ -31,7 +26,7 @@
 (define (collect)
   (define rev-list '())
   (iter-read
-   (lambda (stx) (set! rev-list (cons stx rev-list))))
+   (lambda (decl) (set! rev-list (cons decl rev-list))))
   (reverse rev-list))
 
 (define decls (with-input-from-file tested-file collect))
