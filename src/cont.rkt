@@ -4,6 +4,8 @@
 
 (require (only-in racket/match match))
 
+(require "cps-expr.rkt")
+
 (define (term-cont func) (cons 'term func))
 (define (split-cont var expr) (cons 'split (cons var expr)))
 (define (var-cont var) (cons 'var var))
@@ -22,7 +24,7 @@
   (match k
     [(cons 'term f) (apply-term-cont f e)]
     [(cons 'split (cons v ke)) (apply-split-cont v ke e)]
-    [(cons 'var v) `(#%app ,v ,e)]))
+    [(cons 'var v) (enter-cont v e)]))
 
 (define (reify-cont k)
   (match k
@@ -35,30 +37,30 @@
   (cond
    [(whnf? e) (f e)]
    [(simple-expr? e) (term-cont-use-let e f)]
-   [else `(,e ,(reify-term-cont f))]))
+   [else (call e (reify-term-cont f))]))
 
 (define (apply-split-cont v ke e)
   (cond
    [(simple-expr? e) (split-cont-use-let e v ke)]
-   [else `(,e ,(reify-split-cont v ke))]))
+   [else (enter-cont e (reify-split-cont v ke))]))
 
 (define (reify-term-cont f)
   (let ([var (gensym)])
-    `(lambda (,var) ,(f var))))
+    (cont var (f var))))
 
 (define (reify-split-cont v ke)
-  `(lambda (,v) ,ke))
+  (cont v ke))
 
 (define (term-cont-use-let e f)
   (let ([var (gensym)])
-    `(let ([,var ,e]) ,(f var))))
+    (let1 var e (f var))))
 
 (define (split-cont-use-let e v ke)
-  `(let ([,v ,e]) ,ke))
+  (let1 v e ke))
 
 (define (var-cont-use-let e kvar)
   (let ([v (gensym)])
-    `(let ([,v ,e]) (#%app ,kvar ,v))))
+    (let1 v e (enter-cont kvar v))))
 
 ; find another place for this
 (define (whnf? expr)

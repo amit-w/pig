@@ -5,6 +5,7 @@
 
 (require "transform.rkt")
 (require "oracle-test.rkt")
+(require "cps-expr.rkt")
 
 (define ns (make-base-namespace))
 
@@ -36,7 +37,8 @@
   (iter-read
     (lambda (decl)
       (define cps-expr (transform-decl decl))
-      (println cps-expr)
-      (oracle-test oracle-pair decl cps-expr)
+      (define cps-s-exp (to-s-exp cps-expr))
+      (println cps-s-exp)
+      (oracle-test oracle-pair decl cps-s-exp)
   )))
 

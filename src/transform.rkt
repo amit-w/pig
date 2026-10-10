@@ -6,17 +6,18 @@
          (only-in racket/match match))
 
 (require "cont.rkt")
+(require "cps-expr.rkt")
 
 (define (transform-decl decl)
   (match decl
     [`(define ,var ,body)
      #:when (symbol? var)
-     (transform-expr body (term-cont (lambda (v) `(define-value ',var ,v))))]
+     (transform-expr body (term-cont (lambda (v) (define-value var v))))]
     [`(define (,func ,@args) ,body)
      (let-values ([(kvar k) (gen-var-cont)])
-       `(define-value ',func (lambda (,@args ,kvar) ,(transform-expr body k))))]
+       (define-value func (fn kvar args (transform-expr body k))))]
     [expr
-     (transform-expr expr (term-cont (lambda (v) `(print-value ,v))))]
+     (transform-expr expr (term-cont (lambda (v) (print-value v))))]
    ))
 
 (define (transform-expr expr k)
@@ -43,8 +44,8 @@
 
 (define (build-call-base-expr func args k)
   (if (primop? func)
-    (let ([expr `(#%primop ,func ,@args)]) (use-let expr k))
-    `(#%app ,func ,@args ,(reify-cont k))))
+    (let ([expr (primop-call func args)]) (use-let expr k))
+    (call func (reify-cont k) args)))
 
 (define (split e)
   (if (whnf? e)
