@@ -35,6 +35,7 @@
   (define oracle-pair (make-oracle-pair))
   (iter-read
     (lambda (decl)
+      (println decl)
       (define cps-expr (transform-decl decl))
       (println cps-expr)
       (oracle-test oracle-pair decl cps-expr)

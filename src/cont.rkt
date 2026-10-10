@@ -1,8 +1,23 @@
 #lang racket/base
 
-(provide (all-defined-out))
-
+(require racket/contract)
 (require (only-in racket/match match))
+
+(require "cps-expr.rkt")
+
+(provide
+  (contract-out
+   #:exists cont
+   [term-cont ((any/c . -> . any/c) . -> . cont)]
+   [split-cont (var? expr/c . -> . cont)]
+   [var-cont (var? . -> . cont)]
+   [gen-split-cont (expr/c . -> . (values var? cont))]
+   [gen-var-cont (-> (values var? cont))]
+   [use-let (expr/c cont . -> . expr/c)]
+   [apply-cont (cont expr/c . -> . expr/c)]
+   [reify-cont (cont . -> . expr/c)]
+  ))
+(provide whnf?)
 
 (define (term-cont func) (cons 'term func))
 (define (split-cont var expr) (cons 'split (cons var expr)))

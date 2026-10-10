@@ -3,9 +3,11 @@
 (provide (all-defined-out))
 
 (require (only-in racket/bool symbol=?)
-         (only-in racket/match match))
+         (only-in racket/match match)
+         (only-in racket/contract define/contract))
 
 (require "cont.rkt")
+(require (prefix-in cps: "cps-expr.rkt"))
 
 (define (transform-decl decl)
   (match decl
